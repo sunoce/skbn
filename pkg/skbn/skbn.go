@@ -3,13 +3,12 @@ package skbn
 import (
 	"context"
 	"fmt"
-	"gopkg.in/djherbis/nio.v2"
 	"io"
 	"log"
 	"math"
 	"path/filepath"
 
-	"github.com/sunoce/skbn/pkg/utils"
+	"github.com/maorfr/skbn/pkg/utils"
 
 	"github.com/djherbis/buffer"
 )
@@ -21,7 +20,7 @@ type FromToPair struct {
 }
 
 // Copy copies files from src to dst
-func Copy(src, dst string, parallel int, bufferSize float64) error {
+func Copy(src, dst string, parallel int, bufferSize float64, skipErrorFiles bool) error {
 	srcPrefix, srcPath := utils.SplitInTwo(src, "://")
 	dstPrefix, dstPath := utils.SplitInTwo(dst, "://")
 
@@ -37,7 +36,7 @@ func Copy(src, dst string, parallel int, bufferSize float64) error {
 	if err != nil {
 		return err
 	}
-	err = PerformCopy(srcClient, dstClient, srcPrefix, dstPrefix, fromToPaths, parallel, bufferSize, false)
+	err = PerformCopy(srcClient, dstClient, srcPrefix, dstPrefix, fromToPaths, parallel, bufferSize, skipErrorFiles)
 	if err != nil {
 		return err
 	}
