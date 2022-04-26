@@ -3,12 +3,13 @@ package skbn
 import (
 	"context"
 	"fmt"
+	"gopkg.in/djherbis/nio.v2"
 	"io"
 	"log"
 	"math"
 	"path/filepath"
 
-	"github.com/maorfr/skbn/pkg/utils"
+	"github.com/sunoce/skbn/pkg/utils"
 
 	"github.com/djherbis/buffer"
 )

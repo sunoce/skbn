@@ -1,6 +1,6 @@
-[![Release](https://img.shields.io/github/release/maorfr/skbn.svg)](https://github.com/maorfr/skbn/releases)
-[![Travis branch](https://img.shields.io/travis/maorfr/skbn/master.svg)](https://travis-ci.org/maorfr/skbn)
-[![Docker Pulls](https://img.shields.io/docker/pulls/maorfr/skbn.svg)](https://hub.docker.com/r/maorfr/skbn/)
+[![Release](https://img.shields.io/github/release/maorfr/skbn.svg)](https://github.com/sunoce/skbn/releases)
+[![Travis branch](https://img.shields.io/travis/maorfr/skbn/master.svg)](https://travis-ci.org/sunoce/skbn)
+[![Docker Pulls](https://img.shields.io/docker/pulls/maorfr/skbn.svg)](https://hub.docker.com/r/sunoce/skbn/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/maorfr/skbn)](https://goreportcard.com/report/github.com/maorfr/skbn)
 [![license](https://img.shields.io/github/license/maorfr/skbn.svg)](https://github.com/maorfr/skbn/blob/master/LICENSE)
 
@@ -29,8 +29,8 @@ Download the latest release from the [Releases page](https://github.com/maorfr/s
 ### From source
 
 ```
-mkdir -p $GOPATH/src/github.com/maorfr && cd $_
-git clone https://github.com/maorfr/skbn.git && cd skbn
+mkdir -p $GOPATH/src/github.com/sunoce && cd $_
+git clone https://github.com/sunoce/skbn.git && cd skbn
 make
 ```
 
