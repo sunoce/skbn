@@ -118,9 +118,6 @@ func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, 
 		if !skipErrorFiles && len(errc) != 0 {
 			break
 		}
-		if skipErrorFiles && len(errc) != 0 {
-			log.Printf("Skipped file with error!")
-		}
 
 		bwg.Add(1)
 		currentLine++
@@ -130,39 +127,48 @@ func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, 
 
 		go func(srcClient, dstClient interface{}, srcPrefix, fromPath, dstPrefix, toPath, currentLinePadded string, totalFiles int) {
 
-			if len(errc) != 0 {
+			if !skipErrorFiles && len(errc) != 0 {
 				return
 			}
 
 			newBufferSize := (int64)(bufferSize * 1024 * 1024) // may not be super accurate
 			buf := buffer.New(newBufferSize)
 			pr, pw := nio.Pipe(buf)
+			fileErrorChannel := make(chan error, 1)
 
 			log.Printf("[%s/%d] copy: %s://%s -> %s://%s", currentLinePadded, totalFiles, srcPrefix, fromPath, dstPrefix, toPath)
 
 			go func() {
 				defer pw.Close()
-				if len(errc) != 0 {
+				if !skipErrorFiles && len(errc) != 0 {
 					return
 				}
 				err := Download(srcClient, srcPrefix, fromPath, pw)
 				if err != nil {
 					log.Println(err, fmt.Sprintf(" src: file: %s", fromPath))
-					errc <- err
+					fileErrorChannel <- err
+					if !skipErrorFiles {
+						errc <- err
+					}
 				}
 			}()
 
 			go func() {
 				defer pr.Close()
 				defer bwg.Done()
-				if len(errc) != 0 {
+				if len(fileErrorChannel) != 0 {
+					return
+				}
+				if !skipErrorFiles && len(errc) != 0 {
 					return
 				}
 				defer log.Printf("[%s/%d] done: %s://%s -> %s://%s", currentLinePadded, totalFiles, srcPrefix, fromPath, dstPrefix, toPath)
 				err := Upload(dstClient, dstPrefix, toPath, fromPath, pr)
 				if err != nil {
 					log.Println(err, fmt.Sprintf(" dst: file: %s", toPath))
-					errc <- err
+					if !skipErrorFiles {
+						errc <- err
+					}
 				}
 			}()
 		}(srcClient, dstClient, srcPrefix, ftp.FromPath, dstPrefix, ftp.ToPath, currentLinePadded, totalFiles)
