@@ -11,7 +11,6 @@ import (
 	"github.com/maorfr/skbn/pkg/utils"
 
 	"github.com/djherbis/buffer"
-	"gopkg.in/djherbis/nio.v2"
 )
 
 // FromToPair is a pair of FromPath and ToPath
@@ -37,7 +36,7 @@ func Copy(src, dst string, parallel int, bufferSize float64) error {
 	if err != nil {
 		return err
 	}
-	err = PerformCopy(srcClient, dstClient, srcPrefix, dstPrefix, fromToPaths, parallel, bufferSize)
+	err = PerformCopy(srcClient, dstClient, srcPrefix, dstPrefix, fromToPaths, parallel, bufferSize, false)
 	if err != nil {
 		return err
 	}
@@ -103,7 +102,7 @@ func GetFromToPaths(srcClient interface{}, srcPrefix, srcPath, dstPath string) (
 }
 
 // PerformCopy performs the actual copy action
-func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, fromToPaths []FromToPair, parallel int, bufferSize float64) error {
+func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, fromToPaths []FromToPair, parallel int, bufferSize float64, skipErrorFiles bool) error {
 	// Execute in parallel
 	totalFiles := len(fromToPaths)
 	if parallel == 0 {
@@ -115,8 +114,11 @@ func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, 
 	currentLine := 0
 	for _, ftp := range fromToPaths {
 
-		if len(errc) != 0 {
+		if !skipErrorFiles && len(errc) != 0 {
 			break
+		}
+		if skipErrorFiles && len(errc) != 0 {
+			log.Printf("Skipped file with error!")
 		}
 
 		bwg.Add(1)
