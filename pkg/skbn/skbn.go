@@ -11,6 +11,7 @@ import (
 	"github.com/maorfr/skbn/pkg/utils"
 
 	"github.com/djherbis/buffer"
+	"gopkg.in/djherbis/nio.v2"
 )
 
 // FromToPair is a pair of FromPath and ToPath
@@ -20,7 +21,7 @@ type FromToPair struct {
 }
 
 // Copy copies files from src to dst
-func Copy(src, dst string, parallel int, bufferSize float64, skipErrorFiles bool) error {
+func Copy(src, dst string, parallel int, bufferSize float64) error {
 	srcPrefix, srcPath := utils.SplitInTwo(src, "://")
 	dstPrefix, dstPath := utils.SplitInTwo(dst, "://")
 
@@ -36,7 +37,7 @@ func Copy(src, dst string, parallel int, bufferSize float64, skipErrorFiles bool
 	if err != nil {
 		return err
 	}
-	err = PerformCopy(srcClient, dstClient, srcPrefix, dstPrefix, fromToPaths, parallel, bufferSize, skipErrorFiles)
+	err = PerformCopy(srcClient, dstClient, srcPrefix, dstPrefix, fromToPaths, parallel, bufferSize)
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func GetFromToPaths(srcClient interface{}, srcPrefix, srcPath, dstPath string) (
 }
 
 // PerformCopy performs the actual copy action
-func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, fromToPaths []FromToPair, parallel int, bufferSize float64, skipErrorFiles bool) error {
+func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, fromToPaths []FromToPair, parallel int, bufferSize float64) error {
 	// Execute in parallel
 	totalFiles := len(fromToPaths)
 	if parallel == 0 {
@@ -114,7 +115,7 @@ func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, 
 	currentLine := 0
 	for _, ftp := range fromToPaths {
 
-		if !skipErrorFiles && len(errc) != 0 {
+		if len(errc) != 0 {
 			break
 		}
 
@@ -126,48 +127,39 @@ func PerformCopy(srcClient, dstClient interface{}, srcPrefix, dstPrefix string, 
 
 		go func(srcClient, dstClient interface{}, srcPrefix, fromPath, dstPrefix, toPath, currentLinePadded string, totalFiles int) {
 
-			if !skipErrorFiles && len(errc) != 0 {
+			if len(errc) != 0 {
 				return
 			}
 
 			newBufferSize := (int64)(bufferSize * 1024 * 1024) // may not be super accurate
 			buf := buffer.New(newBufferSize)
 			pr, pw := nio.Pipe(buf)
-			fileErrorChannel := make(chan error, 1)
 
 			log.Printf("[%s/%d] copy: %s://%s -> %s://%s", currentLinePadded, totalFiles, srcPrefix, fromPath, dstPrefix, toPath)
 
 			go func() {
 				defer pw.Close()
-				if !skipErrorFiles && len(errc) != 0 {
+				if len(errc) != 0 {
 					return
 				}
 				err := Download(srcClient, srcPrefix, fromPath, pw)
 				if err != nil {
 					log.Println(err, fmt.Sprintf(" src: file: %s", fromPath))
-					fileErrorChannel <- err
-					if !skipErrorFiles {
-						errc <- err
-					}
+					errc <- err
 				}
 			}()
 
 			go func() {
 				defer pr.Close()
 				defer bwg.Done()
-				if len(fileErrorChannel) != 0 {
-					return
-				}
-				if !skipErrorFiles && len(errc) != 0 {
+				if len(errc) != 0 {
 					return
 				}
 				defer log.Printf("[%s/%d] done: %s://%s -> %s://%s", currentLinePadded, totalFiles, srcPrefix, fromPath, dstPrefix, toPath)
 				err := Upload(dstClient, dstPrefix, toPath, fromPath, pr)
 				if err != nil {
 					log.Println(err, fmt.Sprintf(" dst: file: %s", toPath))
-					if !skipErrorFiles {
-						errc <- err
-					}
+					errc <- err
 				}
 			}()
 		}(srcClient, dstClient, srcPrefix, ftp.FromPath, dstPrefix, ftp.ToPath, currentLinePadded, totalFiles)

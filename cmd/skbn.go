@@ -35,11 +35,10 @@ func NewRootCmd(args []string) *cobra.Command {
 }
 
 type cpCmd struct {
-	src            string
-	dst            string
-	parallel       int
-	bufferSize     float64
-	skipErrorFiles bool
+	src        string
+	dst        string
+	parallel   int
+	bufferSize float64
 
 	out io.Writer
 }
@@ -53,7 +52,7 @@ func NewCpCmd(out io.Writer) *cobra.Command {
 		Short: "Copy files or directories Kubernetes and Cloud storage",
 		Long:  ``,
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := skbn.Copy(c.src, c.dst, c.parallel, c.bufferSize, c.skipErrorFiles); err != nil {
+			if err := skbn.Copy(c.src, c.dst, c.parallel, c.bufferSize); err != nil {
 				log.Fatal(err)
 			}
 		},
